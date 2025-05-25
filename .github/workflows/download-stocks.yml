@@ -60,15 +60,18 @@ jobs:
           echo "📦 Cloning target repo..."
           git clone --depth 1 --branch $BRANCH https://x-access-token:${{ secrets.TARGET_REPO_PAT }}@$TARGET_REPO $WORKDIR
           
+          echo "📂 Creating docs/tickers folder if missing..."
+          mkdir -p $WORKDIR/docs/tickers
+          
           echo "📂 Copying output files..."
-          cp -f output/*.json $WORKDIR/tickers/
+          cp -f output/*.json $WORKDIR/docs/tickers/
           
           cd $WORKDIR
           if git status --porcelain | grep .; then
-            git add *.json
-            git commit -m "📈 Update JSONs from ${{ github.repository }} at ${{ github.run_id }}"
+            git add docs/tickers/*.json
+            git commit -m "📈 Update JSONs in docs/tickers/ from ${{ github.repository }} at ${{ github.run_id }}"
             git push origin $BRANCH
-            echo "✅ JSONs pushed to $TARGET_REPO"
+            echo "✅ JSONs pushed to $TARGET_REPO docs/tickers/"
           else
             echo "ℹ️ No changes to commit."
           fi
