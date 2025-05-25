@@ -57,18 +57,18 @@ jobs:
           BRANCH="main"
           WORKDIR=$(mktemp -d)
           
-          echo "Cloning target repo..."
+          echo "📦 Cloning target repo..."
           git clone --depth 1 --branch $BRANCH https://x-access-token:${{ secrets.TARGET_REPO_PAT }}@$TARGET_REPO $WORKDIR
           
-          echo "Copying output files..."
-          cp -f output/*.json $WORKDIR/
+          echo "📂 Copying output files..."
+          cp -f output/*.json $WORKDIR/tickers/
           
           cd $WORKDIR
           if git status --porcelain | grep .; then
             git add *.json
-            git commit -m "Update JSONs from ${{ github.repository }} at ${{ github.run_id }}"
+            git commit -m "📈 Update JSONs from ${{ github.repository }} at ${{ github.run_id }}"
             git push origin $BRANCH
-            echo "JSONs pushed to $TARGET_REPO"
+            echo "✅ JSONs pushed to $TARGET_REPO"
           else
-            echo "No changes to commit."
+            echo "ℹ️ No changes to commit."
           fi

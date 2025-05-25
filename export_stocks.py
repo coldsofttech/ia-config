@@ -21,7 +21,7 @@ def export_ticker_data(tickers, output_dir="output", error_log="error.log"):
                 result = {
                     "tickerCode": ticker,
                     "info": {
-                        "companyName": info.get("companyName", "")
+                        "companyName": info.get("longName", "")
                     }
                 }
 
