@@ -43,7 +43,7 @@ jobs:
 
       - name: Make Output script executable
         run: chmod +x scripts/list_outputs.sh
-      
+
       - name: Show Output files
         run: scripts/list_outputs.sh
 
