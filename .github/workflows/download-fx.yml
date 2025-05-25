@@ -1,4 +1,4 @@
-name: Download Ticker Data
+name: Download FX Data
 
 on:
   schedule:
@@ -6,25 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  split-tickers:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.split.outputs.matrix }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Generate matrix chunks
-        id: split
-        run: |
-          MATRIX=$(python split_tickers.py tickers.json 6)
-          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
-
   run-fetch:
-    needs: split-tickers
     runs-on: ubuntu-latest
-    strategy:
-      matrix: ${{ fromJson(needs.split-tickers.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -37,15 +20,10 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
-      - name: Run export_stocks.py
+      - name: Run export_fxrate.py
         run: |
-          python export_stocks.py --tickers "${{ join(matrix.chunk, ',') }}"
-
-      #      - name: Make Output script executable
-      #        run: chmod +x scripts/list_outputs.sh
-      #
-      #      - name: Show Output files
-      #        run: scripts/list_outputs.sh
+          FXPAIRS_JSON=$(cat fxpairs.json | jq -c .)
+          python export_fxrate.py --fxpairs "$FXPAIRS_JSON"
 
       - name: Push JSONs to 'investment-analyser-data' repo
         if: success()
@@ -60,18 +38,18 @@ jobs:
           echo "📦 Cloning target repo..."
           git clone --depth 1 --branch $BRANCH https://x-access-token:${{ secrets.TARGET_REPO_PAT }}@$TARGET_REPO $WORKDIR
           
-          echo "📂 Creating docs/tickers folder if missing..."
-          mkdir -p $WORKDIR/docs/tickers
+          echo "📂 Creating docs/fxrates folder if missing..."
+          mkdir -p $WORKDIR/docs/fxrates
           
           echo "📂 Copying output files..."
-          cp -f output/*.json $WORKDIR/docs/tickers/
+          cp -f output/*.json $WORKDIR/docs/fxrates/
           
           cd $WORKDIR
           if git status --porcelain | grep .; then
-            git add docs/tickers/*.json
-            git commit -m "📈 Update JSONs in docs/tickers/ from ${{ github.repository }} at ${{ github.run_id }}"
+            git add docs/fxrates/*.json
+            git commit -m "📈 Update JSONs in docs/fxrates/ from ${{ github.repository }} at ${{ github.run_id }}"
             git push origin $BRANCH
-            echo "✅ JSONs pushed to $TARGET_REPO docs/tickers/"
+            echo "✅ JSONs pushed to $TARGET_REPO docs/fxrates/"
           else
             echo "ℹ️ No changes to commit."
           fi
