@@ -41,11 +41,11 @@ jobs:
         run: |
           python export_stocks.py --tickers "${{ join(matrix.chunk, ',') }}"
 
-      - name: Make Output script executable
-        run: chmod +x scripts/list_outputs.sh
-
-      - name: Show Output files
-        run: scripts/list_outputs.sh
+#      - name: Make Output script executable
+#        run: chmod +x scripts/list_outputs.sh
+#
+#      - name: Show Output files
+#        run: scripts/list_outputs.sh
 
       - name: Push JSONs to 'investment-analyser-data' repo
         if: success()
