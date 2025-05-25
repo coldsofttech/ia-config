@@ -13,10 +13,13 @@ def get_fx_conversion_rate(from_currency, to_currency):
 
     if from_currency == 'GBp' and to_currency == 'GBP':
         return 0.01
-    elif from_currency == 'GBP' and from_currency == 'GBp':
+    elif from_currency == 'GBP' and to_currency == 'GBp':
         return 100
     elif from_currency == 'GBp':
         from_currency = 'GBP'
+        div_flag = True
+    elif to_currency == 'GBp':
+        to_currency = 'GBP'
         div_flag = True
 
     if from_currency.lower() != to_currency.lower():
