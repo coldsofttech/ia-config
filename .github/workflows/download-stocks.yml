@@ -1,0 +1,21 @@
+name: Download Ticker Data
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  split-tickers:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.split.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Generate matrix chunks
+        id: split
+        run: |
+          MATRIX=$(python split_tickers.py tickers.json 6)
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
