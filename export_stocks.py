@@ -5,9 +5,9 @@ import sys
 from datetime import datetime
 from io import StringIO
 
-import yfinance as yf
-import pandas as pd
 import numpy as np
+import pandas as pd
+import yfinance as yf
 
 
 def _download_stock_info(raw_data):
