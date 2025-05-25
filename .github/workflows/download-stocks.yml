@@ -19,3 +19,27 @@ jobs:
         run: |
           MATRIX=$(python split_tickers.py tickers.json 6)
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
+  run-fetch:
+    needs: split-tickers
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.split-tickers.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run export_stocks.py
+        run: |
+          python export_stocks.py --tickers "${{ join(matrix.chunk, ',') }}"
+      
+      - name: Show Output files
+        run: scripts/list_outputs.sh
