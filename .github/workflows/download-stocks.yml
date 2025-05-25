@@ -46,3 +46,29 @@ jobs:
       
       - name: Show Output files
         run: scripts/list_outputs.sh
+
+      - name: Push JSONs to 'investment-analyser-data' repo
+        if: success()
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          TARGET_REPO="github.com/coldsofttech/investment-analyser-data.git"
+          BRANCH="main"
+          WORKDIR=$(mktemp -d)
+          
+          echo "Cloning target repo..."
+          git clone --depth 1 --branch $BRANCH https://x-access-token:${{ secrets.TARGET_REPO_PAT }}@$TARGET_REPO $WORKDIR
+          
+          echo "Copying output files..."
+          cp -f output/*.json $WORKDIR/
+          
+          cd $WORKDIR
+          if git status --porcelain | grep .; then
+            git add *.json
+            git commit -m "Update JSONs from ${{ github.repository }} at ${{ github.run_id }}"
+            git push origin $BRANCH
+            echo "JSONs pushed to $TARGET_REPO"
+          else
+            echo "No changes to commit."
+          fi
