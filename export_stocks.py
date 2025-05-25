@@ -3,8 +3,70 @@ import json
 import os
 import sys
 from datetime import datetime
+from io import StringIO
 
 import yfinance as yf
+import pandas as pd
+import numpy as np
+
+
+def _download_stock_info(raw_data):
+    csv_data = pd.read_csv(StringIO(raw_data.to_csv(index=True)), index_col='Date', parse_dates=True)
+    price_col = 'Adj Close' if 'Adj Close' in csv_data.columns else 'Close'
+
+    return csv_data, price_col
+
+
+def _calculate_volatility(raw_data, price_col):
+    returns = raw_data[price_col].pct_change()
+    daily_vol = returns.std()
+    annual_vol = daily_vol * np.sqrt(252)
+
+    return round(annual_vol * 100, 2)
+
+
+def _calculate_max_drawdown(csv_data, price_col):
+    prices = csv_data[price_col]
+    cum_max = prices.cummax()
+    drawdowns = (prices - cum_max) / cum_max
+    max_drawdown = drawdowns.min()
+
+    return round(max_drawdown * 100, 2)
+
+
+def _calculate_sharpe_ratio(raw_data, price_col, risk_free_rate=0.01):
+    returns = raw_data[price_col].pct_change().dropna()
+    avg_daily_return = returns.mean()
+    std_daily_return = returns.std()
+
+    if std_daily_return == 0:
+        return 0.0
+
+    daily_risk_free = risk_free_rate / 252
+    daily_sharpe = (avg_daily_return - daily_risk_free) / std_daily_return
+    annualised_sharpe = daily_sharpe * np.sqrt(252)
+
+    return round(annualised_sharpe, 2)
+
+
+def _calculate_dividend_frequency(divs):
+    div_freq = 'N/A'
+    if not divs.empty and len(divs) >= 2:
+        divs_per_year = divs.groupby(divs.index.year).count()
+        avg_div_freq = divs_per_year.mean()
+
+        if avg_div_freq >= 11:
+            div_freq = 'Monthly'
+        elif avg_div_freq >= 3.5:
+            div_freq = 'Quarterly'
+        elif avg_div_freq >= 2:
+            div_freq = 'Semi-Annually'
+        elif avg_div_freq >= 1:
+            div_freq = 'Annually'
+        else:
+            div_freq = 'Irregular'
+
+    return div_freq
 
 
 def export_ticker_data(tickers, output_dir="output", error_log="error.log"):
@@ -17,17 +79,35 @@ def export_ticker_data(tickers, output_dir="output", error_log="error.log"):
             try:
                 print(f"📥 [{i}/{total}] Fetching data for {ticker}...")
                 yf_ticker = yf.Ticker(ticker)
+                raw_data = yf_ticker.history(period='max')
+                if raw_data.empty:
+                    raise ValueError(f'No historical data found for ticker "{ticker}". It may be invalid.')
+
+                csv_data, price_col = _download_stock_info(raw_data)
                 info = yf_ticker.info
                 result = {
                     "tickerCode": ticker,
                     "info": {
-                        "companyName": info.get("longName", "")
+                        "companyName": info.get("longName", ""),
+                        "exchange": info.get("exchange", ""),
+                        "industry": info.get("industry", ""),
+                        "sector": info.get("sector", ""),
+                        "website": info.get("website", ""),
+                        "currency": info.get("currency", ""),
+                        "beta": info.get("beta", ""),
+                        "marketCap": info.get("marketCap", ""),
+                        "payoutRatio": info.get("payoutRatio", ""),
+                        "dividendYield": info.get("dividendYield", ""),
+                        "dividendFrequency": _calculate_dividend_frequency(yf_ticker.dividends),
+                        "volatility": _calculate_volatility(raw_data, price_col),
+                        "maxDrawdown": _calculate_max_drawdown(csv_data, price_col),
+                        "sharpeRatio": _calculate_sharpe_ratio(raw_data, price_col)
                     }
                 }
 
                 output_path = os.path.join(output_dir, f"{ticker}.json")
                 with open(output_path, "w") as f:
-                    json.dump(result, f, indent=4)
+                    json.dump(result, f, indent=4, sort_keys=True)
 
                 percent = int((i / total) * 100)
                 print(f"✅ Saved: {output_path} | Progress: {percent:.2f}%")
