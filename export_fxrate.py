@@ -18,6 +18,9 @@ def get_fx_conversion_rate(from_currency, to_currency):
     elif from_currency == 'GBp':
         from_currency = 'GBP'
         div_flag = True
+    elif to_currency == 'GBp':
+        to_currency = 'GBP'
+        div_flag = True
 
     if from_currency.lower() != to_currency.lower():
         conv_pair = f"{from_currency}{to_currency}=X" if from_currency != "USD" else f"{to_currency}=X"
