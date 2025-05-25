@@ -72,8 +72,8 @@ if __name__ == "__main__":
     try:
         pairs = json.loads(args.fxpairs)
         for pair in pairs:
-            from_cur = pair.get("from", "").upper()
-            to_cur = pair.get("to", "").upper()
+            from_cur = pair.get("from", "")
+            to_cur = pair.get("to", "")
             if not from_cur or not to_cur:
                 raise ValueError("Missing 'from' or 'to' in one of the pairs.")
 
