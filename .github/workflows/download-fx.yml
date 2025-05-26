@@ -62,7 +62,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: fxrate-${{ matrix.chunk[0] }}
+          name: fxrate-${{ github.job }}-${{ strategy.job-index }}
           path: output/*.json
 
   collect-and-push:
