@@ -6,8 +6,38 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-fetch:
+  split-fxpairs:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.split.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install jq
+        run: sudo apt-get install jq
+
+      - name: Generate matrix chunks
+        id: split
+        env:
+          CHUNK_SIZE: ${{ secrets.CHUNK_SIZE_FX }}
+        run: |
+          CHUNK_SIZE=${CHUNK_SIZE:-6}
+          echo "🔢 Using CHUNK_SIZE=$CHUNK_SIZE"
+          MATRIX=$(python split_fxpairs.py fxpairs.json "$CHUNK_SIZE" | jq -c .)
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
+  run-fetch:
+    needs: split-fxpairs
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        chunk: ${{ fromJson(needs.split-fxpairs.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -22,8 +52,8 @@ jobs:
 
       - name: Run export_fxrate.py
         run: |
-          FXPAIRS_JSON=$(cat fxpairs.json | jq -c .)
-          python export_fxrate.py --fxpairs "$FXPAIRS_JSON"
+          echo '${{ toJson(matrix.chunk) }}' > chunk.json
+          python export_fxrate.py --fxpairs "$(cat chunk.json)"
 
       - name: Push JSONs to target repo
         if: success()
