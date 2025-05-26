@@ -120,6 +120,7 @@ def export_ticker_data(tickers, output_dir="output", error_log="error.log"):
                     "lastUpdatedTimestamp": timestamp
                 }
                 ticker_dict = {
+                    "tickerCode": ticker.upper(),
                     "info": {
                         "companyName": info.get("longName", ""),
                         "companyDescription": info.get("longBusinessSummary", ""),
