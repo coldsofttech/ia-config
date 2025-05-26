@@ -56,12 +56,33 @@ jobs:
       #      - name: Show Output files
       #        run: scripts/list_outputs.sh
 
-      - name: Push JSONs to target repo
+      - name: Upload artifact
         if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fxrate-${{ github.job }}-${{ strategy.job-index }}
+          path: output/*.json
+
+  collect-and-push:
+    needs: run-fetch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Push JSONs to target repo
+        if: success()
+        run: |
           TARGET_REPO="${{ secrets.TARGET_REPO }}"
           BRANCH="${{ secrets.TARGET_REPO_BRANCH }}"
           WORKDIR=$(mktemp -d)
@@ -73,12 +94,12 @@ jobs:
           mkdir -p $WORKDIR/docs/tickers
           
           echo "📂 Copying output files..."
-          cp -f output/*.json $WORKDIR/docs/tickers/
+          cp -f artifacts/**/*.json $WORKDIR/docs/tickers/
           
           cd $WORKDIR
           if git status --porcelain | grep .; then
             git add docs/tickers/*.json
-            git commit -m "📈 Update JSONs in docs/tickers/ from ${{ github.repository }} at ${{ github.run_id }}"
+            git commit -m "📈 Bulk Update JSONs in docs/tickers/ from ${{ github.repository }} at ${{ github.run_id }}"
             git push origin $BRANCH
             echo "✅ JSONs pushed to $TARGET_REPO docs/tickers/"
           else
