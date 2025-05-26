@@ -55,6 +55,7 @@ jobs:
 
       - name: Run export_fxrate.py
         run: |
+          echo '${{ toJson(matrix.chunk) }}' > chunk.json
           FXPAIRS_JSON=$(jq -c '.' chunk.json)
           python export_fxrate.py --fxpairs "$FXPAIRS_JSON"
 
