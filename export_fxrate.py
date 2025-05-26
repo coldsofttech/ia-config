@@ -78,7 +78,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        pairs = json.loads(args.fxpairs)
+        pairs_obj = json.loads(args.fxpairs)
+        pairs = pairs_obj.get("chunk", pairs_obj) if isinstance(pairs_obj, dict) else pairs_obj
         for pair in pairs:
             from_cur = pair.get("from", "")
             to_cur = pair.get("to", "")
