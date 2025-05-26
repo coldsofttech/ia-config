@@ -2,7 +2,7 @@ name: Download FX Data
 
 on:
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 1 * * *'
   workflow_dispatch:
 
 jobs:
@@ -25,14 +25,14 @@ jobs:
           FXPAIRS_JSON=$(cat fxpairs.json | jq -c .)
           python export_fxrate.py --fxpairs "$FXPAIRS_JSON"
 
-      - name: Push JSONs to 'investment-analyser-data' repo
+      - name: Push JSONs to target repo
         if: success()
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
-          TARGET_REPO="github.com/coldsofttech/investment-analyser-data.git"
-          BRANCH="main"
+          TARGET_REPO="${{ secrets.TARGET_REPO }}"
+          BRANCH="${{ secrets.TARGET_REPO_BRANCH }}"
           WORKDIR=$(mktemp -d)
           
           echo "📦 Cloning target repo..."
