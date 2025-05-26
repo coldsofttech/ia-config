@@ -47,13 +47,16 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install jq
+        run: sudo apt-get install jq
+
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
       - name: Run export_fxrate.py
         run: |
-          echo '${{ toJson(matrix.chunk) }}' > chunk.json
-          python export_fxrate.py --fxpairs "$(cat chunk.json)"
+          FXPAIRS_JSON=$(jq -c '.' chunk.json)
+          python export_fxrate.py --fxpairs "$FXPAIRS_JSON"
 
       - name: Push JSONs to target repo
         if: success()
