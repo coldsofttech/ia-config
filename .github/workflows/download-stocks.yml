@@ -14,10 +14,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Generate matrix chunks
         id: split
+        env:
+          CHUNK_SIZE: ${{ secrets.CHUNK_SIZE_TICKERS }}
         run: |
-          MATRIX=$(python split_tickers.py tickers.json 6)
+          CHUNK_SIZE=${CHUNK_SIZE:-10}
+          echo "🔢 Using CHUNK_SIZE=$CHUNK_SIZE"
+          MATRIX=$(python split_tickers.py tickers.json "$CHUNK_SIZE")
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
   run-fetch:
