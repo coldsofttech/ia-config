@@ -90,7 +90,7 @@ def _calculate_upcoming_dividend(events, csv_data, price_col, div_yield):
                 div_amount = (div_yield * last_price) / 4
                 return div_date, div_amount
 
-    return None, 0.0
+    return None, None
 
 
 def export_ticker_data(tickers, output_dir="output", error_log="error.log"):
@@ -100,6 +100,7 @@ def export_ticker_data(tickers, output_dir="output", error_log="error.log"):
 
     with open(error_log, "a") as log:
         for i, ticker in enumerate(tickers, 1):
+            timestamp = datetime.now().isoformat()
             try:
                 print(f"📥 [{i}/{total}] Fetching data for {ticker}...")
                 yf_ticker = yf.Ticker(ticker)
@@ -112,12 +113,17 @@ def export_ticker_data(tickers, output_dir="output", error_log="error.log"):
                 valid_data = _process_index(csv_data)
                 valid_div_data = _process_index(yf_ticker.dividends.copy())
                 upcoming_div_date, upcoming_div_price = _calculate_upcoming_dividend(
-                    yf_ticker.dividends.copy(), csv_data.copy(), price_col, info.get("dividendYield", "")
+                    yf_ticker.calendar, csv_data.copy(), price_col, info.get("dividendYield", "")
                 )
-                result = {
-                    "tickerCode": ticker,
+                result_dict = {}
+                metadata_dict = {
+                    "lastUpdatedTimestamp": timestamp
+                }
+                ticker_dict = {
                     "info": {
                         "companyName": info.get("longName", ""),
+                        "companyDescription": info.get("longBusinessSummary", ""),
+                        "type": info.get("typeDisp", ""),
                         "exchange": info.get("exchange", ""),
                         "industry": info.get("industry", ""),
                         "sector": info.get("sector", ""),
@@ -132,28 +138,34 @@ def export_ticker_data(tickers, output_dir="output", error_log="error.log"):
                         "maxDrawdown": _calculate_max_drawdown(csv_data.copy(), price_col),
                         "sharpeRatio": _calculate_sharpe_ratio(raw_data.copy(), price_col)
                     },
-                    "data": {
-                        "dates": [d.strftime('%Y-%m-%d') for d in valid_data.index],
-                        "prices": [p for p in valid_data[price_col].tolist()]
-                    },
-                    "dividends": {
-                        "dates": [d.strftime('%Y-%m-%d') for d in valid_div_data.index],
-                        "prices": [p for p in valid_div_data.tolist()],
-                        "upcoming": {
+                    "data": [
+                        {"date": d.strftime('%Y-%m-%d'), "price": p}
+                        for d, p in zip(valid_data.index, valid_data[price_col])
+                    ],
+                    "dividends": [
+                        {"date": d.strftime('%Y-%m-%d'), "price": p}
+                        for d, p in zip(valid_div_data.index, valid_div_data.tolist())
+                    ],
+                    "events": {
+                        "dividends": {
                             "date": upcoming_div_date,
                             "price": upcoming_div_price
                         }
+                    },
+                    "priceInfo": {
+                        "currentPrice": info.get("currentPrice", "")
                     }
                 }
+                result_dict[ticker] = ticker_dict
+                result_dict["metadata"] = metadata_dict
 
                 output_path = os.path.join(output_dir, f"{ticker}.json")
                 with open(output_path, "w") as f:
-                    json.dump(result, f, indent=4, sort_keys=True)
+                    json.dump(result_dict, f, indent=4, sort_keys=True)
 
                 percent = int((i / total) * 100)
                 print(f"✅ Saved: {output_path} | Progress: {percent:.2f}%")
             except Exception as e:
-                timestamp = datetime.now().isoformat()
                 error_msg = f"[{timestamp}] Error fetching data for {ticker}: {str(e)}\n"
                 log.write(error_msg)
                 print(f"❌ {error_msg}", file=sys.stderr)

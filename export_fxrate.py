@@ -40,22 +40,27 @@ def export_fx_data(from_currency, to_currency, output_dir="output", error_log="e
     os.makedirs(output_dir, exist_ok=True)
 
     with open(error_log, "a") as log:
+        timestamp = datetime.now().isoformat()
         try:
             print(f"📥 Fetching data for from: {from_currency} & to: {to_currency}...")
-            result = {
-                "from": from_currency,
-                "to": to_currency,
-                "fxRate": get_fx_conversion_rate(from_currency, to_currency)
+            result_dict = {
+                "fxRate": {
+                    "from": from_currency,
+                    "to": to_currency,
+                    "conversionRate": get_fx_conversion_rate(from_currency, to_currency)
+                },
+                "metadata": {
+                    "lastUpdatedTimestamp": timestamp
+                }
             }
 
             output_path = os.path.join(output_dir, f"{from_currency}{to_currency}=X.json")
             with open(output_path, "w") as f:
-                json.dump(result, f, indent=4, sort_keys=True)
+                json.dump(result_dict, f, indent=4, sort_keys=True)
 
             print(f"✅ Saved: {output_path}")
-        except Exception as e:
-            timestamp = datetime.now().isoformat()
-            error_msg = f"[{timestamp}] Error fetching data for from: {from_currency} & to: {to_currency}: {str(e)}\n"
+        except Exception as ex:
+            error_msg = f"[{timestamp}] Error fetching data for from: {from_currency} & to: {to_currency}: {str(ex)}\n"
             log.write(error_msg)
             print(f"❌ {error_msg}", file=sys.stderr)
 
