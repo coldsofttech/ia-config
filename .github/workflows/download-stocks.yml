@@ -47,14 +47,14 @@ jobs:
       #      - name: Show Output files
       #        run: scripts/list_outputs.sh
 
-      - name: Push JSONs to 'investment-analyser-data' repo
+      - name: Push JSONs to target repo
         if: success()
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
-          TARGET_REPO="github.com/coldsofttech/investment-analyser-data.git"
-          BRANCH="main"
+          TARGET_REPO="${{ secrets.TARGET_REPO }}"
+          BRANCH="${{ secrets.TARGET_REPO_BRANCH }}"
           WORKDIR=$(mktemp -d)
           
           echo "📦 Cloning target repo..."
