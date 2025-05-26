@@ -31,7 +31,6 @@ jobs:
           echo "🔢 Using CHUNK_SIZE=$CHUNK_SIZE"
           MATRIX=$(python split_fxpairs.py fxpairs.json "$CHUNK_SIZE" | jq -c .)
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
-          echo $matrix
 
   run-fetch:
     needs: split-fxpairs
@@ -56,8 +55,7 @@ jobs:
 
       - name: Run export_fxrate.py
         run: |
-          echo '${{ toJson(matrix.chunk) }}' > chunk.json
-          FXPAIRS_JSON=$(jq -c '.' chunk.json)
+          FXPAIRS_JSON='${{ toJson(matrix.chunk) }}'
           python export_fxrate.py --fxpairs "$FXPAIRS_JSON"
 
       - name: Push JSONs to target repo
